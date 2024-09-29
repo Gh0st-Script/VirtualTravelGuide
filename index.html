@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Travel Guide</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: Arial, sans-serif;
+        }
+        #map {
+            width: 100%;
+            height: calc(100vh - 100px); 
+        }
+        #welcome-message {
+            text-align: center;
+            font-size: 24px;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 10px;
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000; 
+        }
+        #back-button {
+            position: absolute;
+            top: 50px; 
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            z-index: 1000;
+        }
+        #back-button:hover {
+            background-color: #0056b3; 
+        }
+        #description-box {
+            height: 100px;
+            background-color: #f7f7f7;
+            padding: 10px;
+            box-shadow: 0 -2px 4px rgba(0,0,0,0.2);
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div id="welcome-message">Welcome to Interactive Travel Guide!</div>
+    <button id="back-button" style="display: none;">Back to Map</button>
+    <div id="map"></div>
+    <div id="description-box"></div>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+        var map = L.map('map', {
+            center: [20.5937, 78.9629],
+            zoom: 5,
+            minZoom: 5,
+            maxZoom: 19,
+            maxBounds: [
+                [6.4627, 68.1100],
+                [37.3025, 97.3953]
+            ],
+            maxBoundsViscosity: 1.0,
+        });
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        var locations = [
+            {
+                coords: [19.0760, 72.8777],
+                name: 'Mumbai',
+                attractions: [
+                    { name: 'Gateway of India', coords: [18.9220, 72.8347], image: 'https://lh3.googleusercontent.com/p/AF1QipPS4G_xsn5lkk5QSnvyR4LjsHYbkGpEvvEeNNoS=s1360-w1360-h1020-rw', description: 'An iconic monument built in 1924, the Gateway of India is one of Mumbai\'s most famous landmarks. It stands on the waterfront in the Apollo Bunder area, overlooking the Arabian Sea. It was originally constructed to commemorate the visit of King George V and Queen Mary to India.' },
+                    { name: 'Marine Drive', coords: [18.944, 72.823], image: 'https://lh3.googleusercontent.com/p/AF1QipMyHvx8SO_K1vn5exHJ45hLRmusux72uRbwxKS3=s1360-w1360-h1020-rw', description: 'Also known as the "Queen\'s Necklace," Marine Drive is a 3.6 km long boulevard along the coast of Mumbai. It offers a picturesque view of the sunset and is a popular spot for a leisurely walk.' },
+                    { name: 'Chhatrapati Shivaji Maharaj Terminus', coords: [18.9398, 72.8354], image: 'https://lh3.googleusercontent.com/p/AF1QipPuG-GEKLWkFuJqsimqjfUeW554RJBbKtSN2DOM=s1360-w1360-h1020-rw',description:'A UNESCO World Heritage Site, this historic railway station is an architectural masterpiece, blending Victorian Gothic and Indian influences. It is one of the busiest railway stations in India.' },
+                    { name: 'Elephanta Caves', coords: [18.9633, 72.9315], image: 'https://lh3.googleusercontent.com/p/AF1QipOb3vU0IlKPzgQVFIEPmbssNevf7oD65R3OYGnP=s294-w294-h220-k-no',description: 'Located on Elephanta Island, these rock-cut caves date back to the 5th to 7th centuries. They are famous for their impressive sculptures and carvings dedicated to the Hindu god Shiva.' },
+                    { name: 'Haji Ali Dargah', coords: [18.9828, 72.8089], image: 'https://lh5.googleusercontent.com/p/AF1QipPUdD87FXdksgRi7IIjYfRgBungD7OK-WY0pDkm=w385-h256-k-no', description: 'Situated on an islet off the coast of Worli in the southern part of Mumbai, the Haji Ali Dargah is a revered mosque and tomb, built in memory of the Muslim saint Pir Haji Ali Shah Bukhari.' },
+                    { name: 'Chhatrapati Shivaji Maharaj Vastu Sangrahalaya', coords: [18.9269, 72.8327], image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQCw7-L11nqVXadWhEwebnII9vPw4JwXJnyAA&s', description: 'Formerly known as the Prince of Wales Museum, this museum showcases art, archaeology, and natural history collections, with a focus on Indian heritage.' },
+                    { name: 'Sanjay Gandhi National Park', coords: [19.2205, 72.9128], image: 'https://lh3.googleusercontent.com/p/AF1QipMUXEixhjMD3-xzDeX6DaShSS7WY1_9Hk6hoASZ=s294-w294-h220-k-no', description: 'Located in the northern part of Mumbai, this large protected area offers a natural retreat with a variety of wildlife, including leopards. It is also home to the Kanheri Caves, ancient rock-cut Buddhist shrines.' },
+                    { name: 'Basilica of Our Lady of the Mount (Mount St Mary Church)', coords: [19.04667, 72.82250], image: 'https://lh3.googleusercontent.com/p/AF1QipPRbj-0r6lwJb74q-zcV6jzL_rEC7hs8wBoKvFe=s294-w294-h220-k-no', description: 'A Roman Catholic basilica located in Bandra, it is one of the most visited churches in Mumbai. It offers panoramic views of the Arabian Sea and attracts thousands of pilgrims during the annual feast in September.' },
+                    { name: 'Juhu beach', coords: [19.1048, 72.8267], image: 'https://gautamkhetwal.wordpress.com/wp-content/uploads/2019/04/juhu-beach-mumbai-1.jpg?w=1200', description: 'A popular beach located in the suburb of Juhu, known for its vibrant atmosphere and food stalls offering local snacks. It\'s a favorite weekend spot for both locals and tourists.' },
+                    { name: 'Hanging Gardens', coords: [18.95711,72.804802], image: 'https://encrypted-tbn3.gstatic.com/licensed-image?q=tbn:ANd9GcQhQl8Unv2Rg6tjOy4s2sMofMshwqEow75gIF8y5X13IH3uIJ5WIHKc8IrQJ28iDuokaDeqM-O4N0CIg7mPcMEi__a6OqPzUDzKVKYSmQ', description: 'Also known as Pherozeshah Mehta Gardens, these terraced gardens are located on Malabar Hill and offer stunning views of the city and the Arabian Sea. They are famous for their beautifully manicured hedges and sunset views.' },
+
+                    ]
+            },
+            {
+                coords: [17.3850, 78.4867],
+                name: 'Hyderabad',
+                attractions: [
+                    { name: 'Charminar', coords: [17.3616, 78.4747], image: 'https://cdn.britannica.com/77/22877-050-9EFB35D4/Charminar-city-Hyderabad-India-Telangana.jpg',description:'An iconic symbol of Hyderabad, Charminar is a 16th-century mosque with four grand arches, known for its stunning architecture and bustling market surrounding it.' },
+                    { name: 'Golconda Fort', coords: [17.3833, 78.4011], image: 'https://www.savaari.com/blog/wp-content/uploads/2022/10/Golkonda-fort.jpg',description:'A magnificent fort known for its impressive architecture and acoustics, Golconda Fort offers panoramic views of the city and a glimpse into Hyderabad\'s royal past.' },
+                    { name: 'Hussain Sagar Lake', coords: [17.4239, 78.4738], image: 'https://t3.gstatic.com/licensed-image?q=tbn:ANd9GcRvCdZqALpTt15E4EYywx0nFdy5JBXiUwDV1x2IVdv4o3V6Cn8kmN-6GP3KIRAPCm1G',description:'A large artificial lake famous for its giant Buddha statue in the center, Hussain Sagar Lake is a popular spot for boating and enjoying scenic views of the city.' },
+                    { name: 'Ramoji Film City', coords: [17.2641, 78.6818], image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d1/Ramoji_Film_City.jpg/1200px-Ramoji_Film_City.jpg',description:'A sprawling film city that offers tours and attractions related to film production, Ramoji Film City is a must-visit for movie buffs and families.' },
+                    { name: 'Salar Jung Museum', coords: [17.3716, 78.4802], image: 'https://www.mapsofindia.com/ci-moi-images/my-india/Salar-Jung-museum.jpg',description:'One of the largest art museums in India, Salar Jung Museum houses an extensive collection of art, artifacts, and antiques from various cultures and eras.' },
+                    { name: 'Chowmahalla Palace', coords: [17.358247,78.471701], image: 'https://encrypted-tbn3.gstatic.com/licensed-image?q=tbn:ANd9GcRU8rRKWM3s2mbxIp1VcNLAoi9qz_l72t5wnW0dZbXlvKhhd10f5v9sb_OfqlVFzkN_AcJDKAwxS2HPXm2kzEOW_TO5Kg2iZontIR0Frw',description: 'A beautiful palace that once served as the seat of the Nizams of Hyderabad, Chowmahalla Palace features stunning architecture and lush gardens.' }
+                ]
+            },
+            {
+                coords: [13.0827, 80.2707],
+                name: 'Chennai',
+                attractions: [
+                    { name: 'Marina Beach', coords: [13.0500, 80.28324], image: 'https://media.tacdn.com/media/attractions-splice-spp-674x446/0b/2d/03/1c.jpg' },
+                    { name: 'Fort St. George', coords: [13.079722, 80.286944], image: 'https://encrypted-tbn1.gstatic.com/licensed-image?q=tbn:ANd9GcQMUx9AuM-90vyr1PB-LM3R0UcAN03NcIMRvCHn_evwEIsrm-Qktmf2ID8dUx5dzJca5hZgxZndS7jyVjah_ZqXRq01AT0_qKT96CwLgA' },
+                    { name: 'Kapaleeshwarar Temple', coords: [13.0388, 80.2696], image: 'https://upload.wikimedia.org/wikipedia/commons/9/99/Kapaleeswarar1.jpg' },
+                    { name: 'Valluvar Kottam', coords: [13.0538, 80.2423], image: 'https://photos.wikimapia.org/p/00/02/48/42/16_big.jpg' },
+                    { name: 'Mahabalipuram', coords: [12.6208, 80.1945],image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT8kcr4RTzFXQ8u5ikP1uZIJB2YOQJ6lv7hnA&s' },
+                    { name: 'Santhome Cathedral Basilica', coords: [13.03362, 80.27779], image: 'https://lh3.googleusercontent.com/proxy/EiVJG2gdyJBb2WJquLIf3gwltNLXdllN-Orr10h_JMOn9dZHny9BNN9DgbhbIT7G7-QIYlEtsgqNWg0Ndd--kN0xdszS_UClDWeZSniZLOOgHA4RueawA7aP3Zfj6gXkEgivrbcz0IfSCOXR6X0Ypkq5D84XuRA=s294-w294-h220-k-no' },
+                    { name: 'Arulmigu Sri Parthasarathy Perumal Temple Tiruvallikeni', coords: [13.05395, 80.27675], image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0f/Tiruvallikeni1.jpg/330px-Tiruvallikeni1.jpg' },
+                    { name: 'Government Museum Chennai', coords: [13.0711, 80.2569], image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/66/Madras_museum_theatre_in_October_2007.jpg/375px-Madras_museum_theatre_in_October_2007.jpg' },
+                    { name: 'Guindy National Park', coords: [13.0049, 80.2379], image: 'https://lh3.googleusercontent.com/p/AF1QipMl4dDkZZjR2yO-IZMERP30Komh6OmMbQt4l2Sr=s294-w294-h220-k-no' },
+                ]
+            },
+            {
+                coords: [12.9716, 77.5946],
+                name: 'Bangalore',
+                attractions: [
+                { name: 'Bangalore Palace', coords: [13.0035, 77.5891], image: 'https://www.holidify.com/images/cmsuploads/compressed/BangalorePalace16_20190904100428_20190904100439.jpg',description:'Built in the Tudor style in 1878, Bangalore Palace resembles the medieval castles of Normandy and England. It serves as the residence of the royal family of Mysore.' },
+                { name: 'Lalbagh Botanical Garden', coords: [12.9494, 77.5847], image: 'https://lh3.googleusercontent.com/p/AF1QipPb4RK8dRAhUHfehHux1cEplTBC80TjDBvLsc-c=s1360-w1360-h1020-rw', description: 'A prominent botanical garden in Bangalore, spread over 240 acres and home to a diverse collection of over 1,000 species of plants. It is famous for its glasshouse, modeled after the Crystal Palace of London.' },
+                { name: 'Vidhana Soudha', coords: [12.9796, 77.5908], image: 'https://lh3.googleusercontent.com/p/AF1QipMvFr9hagbc3VrF77_gCq5PXWSZHkHcZmUWzVtG=s1360-w1360-h1020-rw', description:'An imposing building housing the Karnataka state legislature and secretariat, Vidhana Soudha is an iconic example of Neo-Dravidian architecture.' },
+                { name: 'Cubbon Park', coords: [12.9779, 77.5952], image: 'https://lh3.googleusercontent.com/p/AF1QipPfcKdZHlQ3d9oDK6QBSC26HOVtUXvSpu18O8lW=s294-w294-h220-k-no', description: 'Spread over 300 acres, Cubbon Park is a major green space in Bangalore, offering a serene environment amidst the bustling city. It is home to numerous species of plants and trees and several government buildings.' },
+                { name: 'ISKCON Temple', coords: [13.0097, 77.5511], image: 'https://lh3.googleusercontent.com/p/AF1QipOeKakaGQCwfYiIC5V-VNSYaw5nHRL3lWyld755=s1360-w1360-h1020-rw', description: 'A stunning temple dedicated to Lord Krishna, the ISKCON Bangalore is one of the largest ISKCON temples in the world. It is known for its beautiful architecture and spiritual atmosphere.' },
+                { name: 'Visvesvaraya Industrial & Technological Museum', coords: [12.975100, 77.596400], image: 'https://lh3.googleusercontent.com/proxy/fWaZRVWxjnirdHNi_iCKqusuGQvfoX4AGm2ydUL-sEUEWRQf9q24lyR5IxnWxw7UJ4_7d-6qM_uqKrZk_bozq4LxoZ16A1IsT0nMDPFR3BB_77OUP0jO35JVn3IdvLi7v2O3ABRR8JBhSqAcaBfsaKbhfUZmD_k=s1360-w1360-h1020-rw', description: 'A popular science museum named after Sir M. Visvesvaraya, showcasing various scientific and technological exhibits. It is a favorite educational destination for students and science enthusiasts.' },
+                { name: 'Bannerghatta Biological Park', coords: [12.8008, 77.5773], image: 'https://lh3.googleusercontent.com/p/AF1QipMG2uuEkmCRf17J2wcfZ32Xv9v4aPk1DpZDOH7A=s1360-w1360-h1020-rw', description: 'Located on the outskirts of Bangalore, this park includes a zoo, safari, and butterfly park. It offers a chance to see a variety of wildlife, including lions, tigers, and elephants, in a naturalistic setting.' },
+                { name: 'HAL Heritage Centre and Aerospace Museum', coords: [12.955431, 77.681386], image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d5/HAL_Museum_Bengaluru.jpg/1280px-HAL_Museum_Bengaluru.jpg', description: 'Established in 2001, the HAL Heritage Centre and Aerospace Museum is India\'s first aerospace museum. It showcases the growth of the aviation industry in India and houses a variety of aircraft models, helicopters, and engines. It also features a flight simulator and a library dedicated to aerospace.' },
+                { name: 'Jawaharlal Nehru Planetarium', coords: [12.984207, 77.589711], image: 'https://lh3.googleusercontent.com/p/AF1QipOiZIsb9GhqKDFdd4CXe84M0Mua69khilTOY1NP=s1360-w1360-h1020-rw', description:'Located near the heart of the city, this planetarium offers a captivating experience for astronomy enthusiasts. It conducts regular shows about the solar system, astronomy, and the universe, making it an educational destination for visitors of all ages.' },
+                { name: 'National Gallery of Modern Arts', coords: [12.989705, 77.588150], image: 'https://lh5.googleusercontent.com/p/AF1QipOU3ZUWOUYOk0nsMn5iO4f1oSovyKEvmiHQSuMD=w341-h256-k-no',description: 'The National Gallery of Modern Art in Bangalore is housed in a historic mansion and features a vast collection of modern and contemporary Indian art. It showcases works from prominent Indian artists and organizes exhibitions, workshops, and educational programs to promote art appreciation.' }
+                ]
+            },
+            {
+                coords: [28.6139, 77.2090],
+                name: 'Delhi',
+                attractions: [
+                { name: 'India Gate', coords: [28.6129, 77.2295], image: 'https://images.mapsofworld.com/allwonders/2015/01/India-Gate-Delhi.jpg',description: 'India Gate is a war memorial dedicated to the soldiers who died in World War I and the Anglo-Afghan War. It stands as a prominent symbol of national pride.' },
+                { name: 'Red Fort', coords: [28.6562, 77.2410], image: 'https://lh3.googleusercontent.com/p/AF1QipNT3MFYBjz2Mf13lhr3Ib3742ksR0rVlVphOy5z=s1360-w1360-h1020',description: 'A UNESCO World Heritage Site, the Red Fort is a historic fortification in the city of Delhi. It served as the main residence of the Mughal emperors for nearly 200 years.' },
+                { name: 'Qutub Minar', coords: [28.5245, 77.1855], image: 'https://lh3.googleusercontent.com/p/AF1QipO5TYMprvAQ3sTlMP2hoRjF0Mx-T8dKUVWTXUHN=s1360-w1360-h1020', description:'This UNESCO World Heritage Site is the tallest brick minaret in the world, standing at 73 meters. It was built in 1193 and is a stunning example of Indo-Islamic architecture.' },
+                { name: 'Lotus Temple', coords: [28.5535, 77.2588], image: 'https://lh3.googleusercontent.com/p/AF1QipPebPffelBI-y4dw0UzAILMgiw5FIFMGqbbN1ob=s1360-w1360-h1020', description: 'Known for its flowerlike shape, the Lotus Temple is a Bahá\'í House of Worship and serves as a place for meditation and prayer for people of all religions.' },
+                { name: 'Humayun\'s Tomb', coords: [28.5933, 77.2507], image: 'https://cdn.britannica.com/54/156454-050-4E72CEE0/Humayuns-Tomb-Hamidah-Banu-Begam-Delhi-India-1569.jpg',description: 'Another UNESCO World Heritage Site, Humayun\'s Tomb is a stunning example of Mughal architecture and is the tomb of the Mughal Emperor Humayun.' },
+                { name: 'Gurudwara Shri Bangla Sahib ji', coords: [28.6259, 77.2090], image: 'https://upload.wikimedia.org/wikipedia/commons/4/49/Front_view_of_Gurudwara_Bangla_Sahib%2C_Delhi.jpg',description: 'A prominent Sikh temple in Delhi, Gurudwara Bangla Sahib is known for its stunning architecture and community kitchen that serves free meals to thousands of visitors daily.' },
+                { name: 'Jama Masjid', coords: [28.6507, 77.2334], image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/77/Jama_Masjid%2C_Delhi.jpg/1200px-Jama_Masjid%2C_Delhi.jpg',description:'One of the largest mosques in India, Jama Masjid is a beautiful structure that showcases exquisite Mughal architecture. It\'s an important place of worship and a major tourist attraction.' },
+                { name: 'Rajghat Memorial', coords: [28.640500, 77.249333], image: 'https://lh3.googleusercontent.com/proxy/lGH2BnV0nFiW2Khw74o9CvBIHqCCUNkq1X3XBjqbUkLHAj3CjjXA_cFn0fD9YkJ5X8lDSRS5CD5_aCkZGTTrCXGkp3d54aOjRZx9kquwEM5QMglVDMensl_C7_y-lICeSTrwyCx7rSB6ZXx7x2C9lSZ67bvLBg=s294-w294-h220-k-no',description:'This memorial is dedicated to Mahatma Gandhi, the leader of the Indian independence movement. It marks the spot where his last rites were performed and is surrounded by lush gardens.' },
+                { name: 'Chandni Chowk', coords: [28.6505, 77.2303], image: 'https://lh3.googleusercontent.com/p/AF1QipPgiGfU-vlBNk29SGmoYEBh64zknOwCrJ3a1quT=s1360-w1360-h1020-rw',description: 'One of the oldest and busiest markets in Old Delhi, Chandni Chowk is known for its narrow lanes, vibrant shops, and delicious street food. It offers a glimpse into the historical heart of Delhi.' },
+
+                ]
+            },
+        
+            {
+                coords: [22.5726, 88.3639],
+                name: 'Kolkata',
+                attractions: [
+                { name: 'Victoria Memorial', coords: [22.5448, 88.3426], image: 'https://lh3.googleusercontent.com/p/AF1QipMHvkB151icA3Pa0YFWpakcpCv_LplFa1gorz6j=s1360-w1360-h1020',description:'The Victoria Memorial is an iconic monument dedicated to Queen Victoria. It features a museum with a vast collection of art and artifacts, set in beautiful gardens.' },
+                { name: 'Dakshineswar Kali Temple', coords: [22.655, 88.358], image: 'https://encrypted-tbn3.gstatic.com/licensed-image?q=tbn:ANd9GcQSNhjd5yci_DFsnwqtilvh__7XWbW0zdjzrsxj9LJqzZbNmCJEGh6G2WWxBf41KIURZremW7ZFhIUsFAbxzjt55DupuG1_zUEE65qS3A',description:'A famous Hindu temple located on the banks of the Hooghly River, dedicated to Goddess Kali. It attracts devotees and tourists alike for its spiritual significance and stunning architecture.' },
+                { name: 'Indian Museum', coords: [22.55806, 88.35083], image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8c/Indian_Museum%2C_Courtyard%2C_Kolkata%2C_India.jpg/1024px-Indian_Museum%2C_Courtyard%2C_Kolkata%2C_India.jpg',description: 'Established in 1814, this is one of the oldest and largest museums in India. It houses a vast collection of antiques, armory, fossils, and various art pieces.' },
+                { name: 'Eden Gardens', coords: [22.5646, 88.3433], image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR6dOiTjAMgMZ00KgdMYs__kFwGIKizxjmaYt_bE5tBq48jvrEkGkx_AKAH1qDMW1bsO2s&usqp=CAU', description: 'A historic cricket stadium and one of the largest cricket stadiums in the world, Eden Gardens is a must-visit for sports enthusiasts.' },
+                { name: 'Howrah Bridge', coords: [22.5852, 88.3468], image: 'https://lh3.googleusercontent.com/p/AF1QipNsIVE7E2eQ_MI9RFNeE9i96IK8fTY8RtX41tDX=s1360-w1360-h1020', description: 'An engineering marvel, the Howrah Bridge is a cantilever bridge that spans the Hooghly River. It is a vital link between Kolkata and Howrah.' },
+                { name: 'Birla Mandir', coords: [22.53056, 88.36500], image: 'https://lh5.googleusercontent.com/p/AF1QipM8T2ojCVn7Styzp5VJNySXK8tiAepr4ZAN6g2X=w455-h256-k-no', description:'A stunning Hindu temple dedicated to Lord Krishna and Goddess Radha, Birla Mandir is renowned for its intricate marble carvings and serene atmosphere.' },
+                { name: 'St. Paul\'s Cathedral', coords: [22.54417, 88.34667], image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4d/St_Paul%27s_Cathedral.jpg/1280px-St_Paul%27s_Cathedral.jpg',description:'An architectural masterpiece, St. Paul\'s Cathedral is one of the most prominent churches in Kolkata. It showcases Gothic architecture and has beautiful stained glass windows.' },
+                { name: 'Jorasanko Thakurbari', coords: [22.5855, 88.3568], image: 'https://upload.wikimedia.org/wikipedia/commons/2/2c/Jorasanko_Thakur_Bari.jpg',description:'The ancestral home of the Tagore family, Jorasanko Thakurbari is a cultural heritage site and a museum dedicated to Rabindranath Tagore.' },
+                { name: 'Fort William', coords: [22.5547, 88.3361], image: 'https://lh3.googleusercontent.com/p/AF1QipNkrxdET9qr7vc2VXjEwYmYHRreAVkPVmepTiVF=s1360-w1360-h1020-rw',description:'A historic fort built during the British rule, Fort William is now an army installation and a symbol of Kolkata\'s colonial past.' },
+                { name: 'M.P. Birla Planetarium', coords: [22.5455333, 88.3451944], image: 'https://lh5.googleusercontent.com/p/AF1QipOFzgQR0SgkLK3Sk3RrB7L93xlGSUl0AmN54MPr=w675-h390-n-k-no',description:'One of the largest planetariums in Asia, the M.P. Birla Planetarium offers educational shows and exhibits related to astronomy and space science.' },
+            ]
+            },
+            {
+                coords: [13.0827, 80.2707],
+                name: 'Chennai',
+                attractions: [
+                    { name: 'Marina Beach', coords: [13.0500, 80.28324], image: 'https://media.tacdn.com/media/attractions-splice-spp-674x446/0b/2d/03/1c.jpg',description:'The longest urban beach in India, Marina Beach is famous for its picturesque views, lively atmosphere, and various food stalls.' },
+                    { name: 'Fort St. George', coords: [13.079722, 80.286944], image: 'https://encrypted-tbn1.gstatic.com/licensed-image?q=tbn:ANd9GcQMUx9AuM-90vyr1PB-LM3R0UcAN03NcIMRvCHn_evwEIsrm-Qktmf2ID8dUx5dzJca5hZgxZndS7jyVjah_ZqXRq01AT0_qKT96CwLgA',description:'The first fort built by the British in India, Fort St. George now houses the Tamil Nadu Legislative Assembly and a museum showcasing artifacts from the colonial era.' },
+                    { name: 'Kapaleeshwarar Temple', coords: [13.0388, 80.2696], image: 'https://upload.wikimedia.org/wikipedia/commons/9/99/Kapaleeswarar1.jpg',description: 'An ancient Hindu temple dedicated to Lord Shiva, known for its Dravidian architecture and vibrant gopurams (tower).' },
+                    { name: 'Valluvar Kottam', coords: [13.0538, 80.2423], image: 'https://photos.wikimapia.org/p/00/02/48/42/16_big.jpg',description: 'A memorial dedicated to the Tamil poet and philosopher Thiruvalluvar, featuring a stunning structure and beautiful gardens.' },
+                    { name: 'Mahabalipuram', coords: [12.6208, 80.1945],image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT8kcr4RTzFXQ8u5ikP1uZIJB2YOQJ6lv7hnA&s',description:'A UNESCO World Heritage Site known for its rock-cut temples and sculptures, Mahabalipuram is a popular day-trip destination from Chennai.' },
+                    { name: 'Santhome Cathedral Basilica', coords: [13.03362, 80.27779], image: 'https://lh3.googleusercontent.com/proxy/EiVJG2gdyJBb2WJquLIf3gwltNLXdllN-Orr10h_JMOn9dZHny9BNN9DgbhbIT7G7-QIYlEtsgqNWg0Ndd--kN0xdszS_UClDWeZSniZLOOgHA4RueawA7aP3Zfj6gXkEgivrbcz0IfSCOXR6X0Ypkq5D84XuRA=s294-w294-h220-k-no',description:'A stunning neo-Gothic cathedral built over the tomb of St. Thomas, one of the twelve apostles of Jesus.' },
+                    { name: 'Arulmigu Sri Parthasarathy Perumal Temple Tiruvallikeni', coords: [13.05395, 80.27675], image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0f/Tiruvallikeni1.jpg/330px-Tiruvallikeni1.jpg',description:'A historic Hindu temple dedicated to Lord Krishna, known for its intricate carvings and spiritual significance.' },
+                    { name: 'Government Museum Chennai', coords: [13.0711, 80.2569], image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/66/Madras_museum_theatre_in_October_2007.jpg/375px-Madras_museum_theatre_in_October_2007.jpg',description:'One of the oldest museums in India, featuring a diverse collection of art, archaeology, and natural history.' },
+                    { name: 'Guindy National Park', coords: [13.0049, 80.2379], image: 'https://lh3.googleusercontent.com/p/AF1QipMl4dDkZZjR2yO-IZMERP30Komh6OmMbQt4l2Sr=s294-w294-h220-k-no',description:'A protected area in the heart of Chennai, known for its diverse flora and fauna, including deer and a variety of bird species.' },
+                    { name: 'Vivekanandar Illam', coords: [13.042833162, 80.274832234], image: 'https://encrypted-tbn2.gstatic.com/licensed-image?q=tbn:ANd9GcQlFHC6g-EIZJJKd0X0jpfhMdoj1LVfDBNlZvl_v7wh3Iy--hHV4YGeQxqFok9rs531c1eUz0CyxX7RzSI-1gduhBOml6rCCxQWG6T8LQ',description:'A historic site dedicated to Swami Vivekananda, showcasing his life and teachings, along with beautiful gardens and exhibitions.' },
+
+                ]
+            }
+        ];
+
+        var markerGroup = L.layerGroup().addTo(map);
+
+        locations.forEach(function(location) {
+            var marker = L.marker(location.coords).addTo(markerGroup);
+            marker.bindPopup(`<b>${location.name}</b><br>Click to explore`);
+            
+            marker.on('click', function() {
+                markerGroup.clearLayers();
+                map.setView(location.coords, 13);
+                location.attractions.forEach(function(attraction) {
+                    var attractionMarker = L.marker(attraction.coords).addTo(markerGroup);
+                    attractionMarker.bindPopup(`<b>${attraction.name}</b><br><img src="${attraction.image}" width="200" height="150">`);
+                    
+                    attractionMarker.on('click', function() {
+                        document.getElementById('description-box').innerHTML = `<h3>${attraction.name}</h3><p>${attraction.description}</p>`;
+                    });
+                });
+                document.getElementById('back-button').style.display = 'block';
+            });
+        });
+
+        document.getElementById('back-button').addEventListener('click', function() {
+            markerGroup.clearLayers();
+            document.getElementById('description-box').innerHTML = '';
+            locations.forEach(function(location) {
+                var marker = L.marker(location.coords).addTo(markerGroup);
+                marker.bindPopup(`<b>${location.name}</b><br>Click to explore`);
+                
+                marker.on('click', function() {
+                    markerGroup.clearLayers();
+                    map.setView(location.coords, 13);
+                    location.attractions.forEach(function(attraction) {
+                        var attractionMarker = L.marker(attraction.coords).addTo(markerGroup);
+                        attractionMarker.bindPopup(`<b>${attraction.name}</b><br><img src="${attraction.image}" width="200" height="150">`);
+                        
+                        attractionMarker.on('click', function() {
+                            document.getElementById('description-box').innerHTML = `<h3>${attraction.name}</h3><p>${attraction.description}</p>`;
+                        });
+                    });
+                    document.getElementById('back-button').style.display = 'block';
+                });
+            });
+            document.getElementById('back-button').style.display = 'none';
+            map.setView([20.5937, 78.9629], 5);
+        });
+    </script>
+</body>
+</html>
